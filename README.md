@@ -12,12 +12,46 @@ A Model Context Protocol (MCP) server that provides access to OPET fuel prices d
 - Get last update timestamp
 - Error handling with detailed messages
 
+## Prerequisites
+
+Before using this MCP server, you need to set up the OPET API server first.
+
+### 1. Install OPET Package
+
+Install the OPET package from [https://github.com/sinanerdinc/opet](https://github.com/sinanerdinc/opet):
+
+```bash
+pip install opet
+```
+
+### 2. Start OPET API Server
+
+Start the API server using one of the following methods:
+
+**Option A: Using CLI**
+```bash
+opet-cli --api
+```
+
+**Option B: Using Docker**
+```bash
+docker run -p 8000:8000 sinanerdinc/opet api
+```
+
+**Option C: Using Docker with custom port**
+```bash
+docker run -p 5050:8000 sinanerdinc/opet api
+```
+
+The API server will be available at `http://localhost:8000` (or your custom port).
+
 ## Installation
 
 ### Prerequisites
 
 - Python 3.12 or higher
-- uv package manager
+- uv package manager (recommended) or pip
+- OPET package installed and API server running
 
 ### Setup
 
@@ -27,19 +61,28 @@ git clone <repository-url>
 cd opet-mcp
 ```
 
-2. Create a virtual environment and install dependencies:
+2. Using uv
 ```bash
+# Install uv if you don't have it
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create virtual environment and install dependencies
 uv venv -p 3.12
-source .venv/bin/activate
-uv add fastmcp
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+uv sync
 ```
+
 
 ## Configuration
 
-Set the OPET API URL using environment variables:
+Set the OPET API URL using environment variables. The URL should point to your running OPET API server:
 
 ```bash
-export OPET_API_URL=http://your-api-endpoint.com
+# If using default port (8000)
+export OPET_API_URL=http://localhost:8000
+
+# If using custom port (e.g., 5050)
+export OPET_API_URL=http://localhost:5050
 ```
 
 ## Usage
@@ -49,12 +92,16 @@ export OPET_API_URL=http://your-api-endpoint.com
 Start the MCP server:
 
 ```bash
+# With uv
+uv run fastmcp run server.py
+
+# With pip
 fastmcp run server.py
 ```
 
 ### Example Configuration
 
-Install the server to Claude with a custom name and API URL:
+#### Option 1: Install the server to Claude with a custom name and API URL:
 
 ```bash
 {
@@ -70,18 +117,18 @@ Install the server to Claude with a custom name and API URL:
         "/your_absolute_path/opet-mcp/server.py"
       ],
       "env": {
-        "OPET_API_URL": "CHANGE_ME"
+        "OPET_API_URL": "http://localhost:8000"
       }
     }
   }
 }
 ```
 
-### Example Installation Command
+#### Option 2: Installation Command
 
 ```bash
 fastmcp install server.py --name "OPET Fuel Prices" \
-  --env-var OPET_API_URL=http://localhost:5050
+  --env-var OPET_API_URL=http://localhost:8000
 ```
 
 ## Available Tools
