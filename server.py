@@ -1,10 +1,8 @@
-import json
 from fastmcp import FastMCP
-from opet.api import OpetApiClient
+from utils import get_fuel_prices, get_json
 
 
 mcp = FastMCP(name="Opet MCP")
-opet_client = OpetApiClient()
 
 @mcp.tool()
 def get_provinces():
@@ -12,14 +10,7 @@ def get_provinces():
     Returns the province of the cities.
     :return:
     """
-    try:
-        with open("provinces.json", "r", encoding="utf-8") as file:
-            return json.load(file)
-    except FileNotFoundError:
-        return {"error": "File 'provinces.json' not found."}
-    except json.JSONDecodeError:
-        return {"error": "Error decoding JSON content from 'provinces.json'."}
-
+    return get_json("provinces.json")
 
 @mcp.tool()
 def get_fuel_price(province_code: str):
@@ -39,7 +30,7 @@ def get_fuel_price(province_code: str):
         in case of an exception.
     """
     try:
-        return opet_client.price(province_code)
+        return get_fuel_prices(province_code)
     except Exception as e:
         return {"error": str(e)}
 
