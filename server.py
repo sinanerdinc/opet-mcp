@@ -1,66 +1,48 @@
-from fastmcp import FastMCP, Context
-import httpx
-from typing import Dict, Any, Annotated
-from pydantic import BaseModel
-import os
+import json
+from fastmcp import FastMCP
+from opet.api import OpetApiClient
 
-mcp = FastMCP("Opet MCP Server")
 
-OPET_API_URL = os.getenv("OPET_API_URL", "http://localhost:5050")
-
-class ErrorResponse(BaseModel):
-    error: str
-    details: str | None = None
+mcp = FastMCP(name="Opet MCP")
+opet_client = OpetApiClient()
 
 @mcp.tool()
-async def get_all_provinces(ctx: Context) -> Dict[str, Any]:
-    """Retrieves all provinces."""
-    await ctx.info("Getting all provinces")
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(f"{OPET_API_URL}/fuel/provinces")
-            response.raise_for_status()
-            return response.json()
-        except httpx.HTTPError as e:
-            return ErrorResponse(
-                error="Failed to fetch provinces",
-                details=str(e)
-            ).model_dump()
+def get_provinces():
+    """
+    Returns the province of the cities.
+    :return:
+    """
+    try:
+        with open("provinces.json", "r", encoding="utf-8") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return {"error": "File 'provinces.json' not found."}
+    except json.JSONDecodeError:
+        return {"error": "Error decoding JSON content from 'provinces.json'."}
+
 
 @mcp.tool()
-async def get_fuel_prices_by_province(
-    province_id: Annotated[
-        str,
-        "The unique identifier of the province to fetch fuel prices for. This should be a valid province ID from the get_all_provinces() response."
-    ], ctx: Context
-) -> Dict[str, Any]:
-    """Retrieves fuel prices for a specific province."""
-    await ctx.info(f"Getting fuel prices for province {province_id}")
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(f"{OPET_API_URL}/fuel/prices/{str(province_id)}")
-            response.raise_for_status()
-            return response.json()
-        except httpx.HTTPError as e:
-            return ErrorResponse(
-                error=f"Failed to fetch fuel prices for province {province_id}",
-                details=str(e)
-            ).model_dump()
+def get_fuel_price(province_code: str):
+    """
+    Function to retrieve the fuel price for a specified province using its code.
 
-@mcp.tool()
-async def get_last_update_time(ctx: Context) -> Dict[str, Any]:
-    """Retrieves the last update timestamp."""
-    await ctx.info("Getting last update time")
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(f"{OPET_API_URL}/fuel/last-update")
-            response.raise_for_status()
-            return response.json()
-        except httpx.HTTPError as e:
-            return ErrorResponse(
-                error="Failed to fetch last update time",
-                details=str(e)
-            ).model_dump()
+    The function takes the province code as input and fetches the price using an
+    external client. If any exception occurs during the process, it returns the
+    error message within a dictionary.
+
+    Args:
+        province_code (str): Code of the province for which the fuel price
+        needs to be retrieved.
+
+    Returns:
+        dict: A dictionary containing either the fuel price or an error message
+        in case of an exception.
+    """
+    try:
+        return opet_client.price(province_code)
+    except Exception as e:
+        return {"error": str(e)}
+
 
 if __name__ == "__main__":
     mcp.run()
